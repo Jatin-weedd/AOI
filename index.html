@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet-svg-shape-markers.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="data/AreaofInfluence_1.js"></script>
+        <script src="data/PatelNagar_2.js"></script>
+        <script src="data/Competitors_3.js"></script>
+        <script src="data/YourStores_4.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[28.604656411799127,77.01158298676341],[28.67740887774495,77.18597073138271]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_BaseMap_0');
+        map.getPane('pane_BaseMap_0').style.zIndex = 400;
+        var layer_BaseMap_0 = L.tileLayer('https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+            pane: 'pane_BaseMap_0',
+            opacity: 1.0,
+            attribution: '<a href="https://cartodb.com/basemaps/">Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_BaseMap_0;
+        map.addLayer(layer_BaseMap_0);
+        function pop_AreaofInfluence_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Location</th>\
+                        <td>' + (feature.properties['Location'] !== null ? autolinker.link(feature.properties['Location'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Area of Influence</th>\
+                        <td>' + (feature.properties['Area of Influence'] !== null ? autolinker.link(feature.properties['Area of Influence'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Area of Influence (in sqkm)</th>\
+                        <td>' + (feature.properties['Area of Influence (in sqkm)'] !== null ? autolinker.link(feature.properties['Area of Influence (in sqkm)'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Area of Influence (in %)</th>\
+                        <td>' + (feature.properties['Area of Influence (in %)'] !== null ? autolinker.link(feature.properties['Area of Influence (in %)'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_AreaofInfluence_1_0(feature) {
+            switch(String(feature.properties['Area of Influence (in sqkm)'])) {
+                case '0.12 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(202,0,32,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '0.3 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(210,33,52,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '0.45 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(219,66,71,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '0.58 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,99,91,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '1.07 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(236,132,110,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '1.43 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(244,165,130,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '1.51 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(246,183,155,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '1.67 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(248,201,180,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '1.69 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(251,219,205,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '1.75 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(253,237,230,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '2.07 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '2.11 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(241,241,241,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '2.43 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,227,227,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '2.8 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(214,214,214,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '3.10 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(200,200,200,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '3.29 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(186,186,186,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '3.6 sq.km':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(162,162,162,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '3.7 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(137,137,137,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '4.3 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(113,113,113,0.7)',
+                interactive: true,
+            }
+                    break;
+                case '8.46 sqkm ':
+                    return {
+                pane: 'pane_AreaofInfluence_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.7)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(88,88,88,0.7)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_AreaofInfluence_1');
+        map.getPane('pane_AreaofInfluence_1').style.zIndex = 401;
+        map.getPane('pane_AreaofInfluence_1').style['mix-blend-mode'] = 'normal';
+        var layer_AreaofInfluence_1 = new L.geoJson(json_AreaofInfluence_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_AreaofInfluence_1',
+            layerName: 'layer_AreaofInfluence_1',
+            pane: 'pane_AreaofInfluence_1',
+            onEachFeature: pop_AreaofInfluence_1,
+            style: style_AreaofInfluence_1_0,
+        });
+        bounds_group.addLayer(layer_AreaofInfluence_1);
+        map.addLayer(layer_AreaofInfluence_1);
+        function pop_PatelNagar_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">TEHSIL</th>\
+                        <td class="visible-with-data" id="TEHSIL">' + (feature.properties['TEHSIL'] !== null ? autolinker.link(feature.properties['TEHSIL'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PatelNagar_2_0() {
+            return {
+                pane: 'pane_PatelNagar_2',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_PatelNagar_2');
+        map.getPane('pane_PatelNagar_2').style.zIndex = 402;
+        map.getPane('pane_PatelNagar_2').style['mix-blend-mode'] = 'normal';
+        var layer_PatelNagar_2 = new L.geoJson(json_PatelNagar_2, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_PatelNagar_2',
+            layerName: 'layer_PatelNagar_2',
+            pane: 'pane_PatelNagar_2',
+            onEachFeature: pop_PatelNagar_2,
+            style: style_PatelNagar_2_0,
+        });
+        bounds_group.addLayer(layer_PatelNagar_2);
+        map.addLayer(layer_PatelNagar_2);
+        function pop_Competitors_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Location</th>\
+                        <td>' + (feature.properties['Location'] !== null ? autolinker.link(feature.properties['Location'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Company</th>\
+                        <td>' + (feature.properties['Company'] !== null ? autolinker.link(feature.properties['Company'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Competitors_3_0() {
+            return {
+                pane: 'pane_Competitors_3',
+                radius: 6.0,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(72,123,182,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Competitors_3');
+        map.getPane('pane_Competitors_3').style.zIndex = 403;
+        map.getPane('pane_Competitors_3').style['mix-blend-mode'] = 'normal';
+        var layer_Competitors_3 = new L.geoJson(json_Competitors_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Competitors_3',
+            layerName: 'layer_Competitors_3',
+            pane: 'pane_Competitors_3',
+            onEachFeature: pop_Competitors_3,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Competitors_3_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Competitors_3);
+        map.addLayer(layer_Competitors_3);
+        function pop_YourStores_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Location</th>\
+                        <td>' + (feature.properties['Location'] !== null ? autolinker.link(feature.properties['Location'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Type</th>\
+                        <td>' + (feature.properties['Type'] !== null ? autolinker.link(feature.properties['Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_YourStores_4_0(feature) {
+            switch(String(feature.properties['Type'])) {
+                case 'Bazaar':
+                    return {
+                pane: 'pane_YourStores_4',
+                shape: 'triangle',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,26,28,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Reliance Fresh':
+                    return {
+                pane: 'pane_YourStores_4',
+                shape: 'triangle',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(77,198,50,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Superstore':
+                    return {
+                pane: 'pane_YourStores_4',
+                shape: 'triangle',
+                radius: 10.0,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(51,173,255,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_YourStores_4');
+        map.getPane('pane_YourStores_4').style.zIndex = 404;
+        map.getPane('pane_YourStores_4').style['mix-blend-mode'] = 'normal';
+        var layer_YourStores_4 = new L.geoJson(json_YourStores_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_YourStores_4',
+            layerName: 'layer_YourStores_4',
+            pane: 'pane_YourStores_4',
+            onEachFeature: pop_YourStores_4,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.shapeMarker(latlng, style_YourStores_4_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_YourStores_4);
+        map.addLayer(layer_YourStores_4);
+        var overlaysTree = [
+            {label: 'Your Stores<br /><table><tr><td style="text-align: center;"><img src="legend/YourStores_4_Bazaar0.png" /></td><td>Bazaar</td></tr><tr><td style="text-align: center;"><img src="legend/YourStores_4_RelianceFresh1.png" /></td><td>Reliance Fresh</td></tr><tr><td style="text-align: center;"><img src="legend/YourStores_4_Superstore2.png" /></td><td>Superstore</td></tr></table>', layer: layer_YourStores_4},
+            {label: '<img src="legend/Competitors_3.png" /> Competitors', layer: layer_Competitors_3},
+            {label: '<img src="legend/PatelNagar_2.png" /> Patel Nagar', layer: layer_PatelNagar_2},
+            {label: 'Area of Influence<br /><table><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_012sqkm0.png" /></td><td>0.12 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_03sqkm1.png" /></td><td>0.3 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_045sqkm2.png" /></td><td>0.45 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_058sqkm3.png" /></td><td>0.58 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_107sqkm4.png" /></td><td>1.07 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_143sqkm5.png" /></td><td>1.43 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_151sqkm6.png" /></td><td>1.51 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_167sqkm7.png" /></td><td>1.67 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_169sqkm8.png" /></td><td>1.69 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_175sqkm9.png" /></td><td>1.75 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_207sqkm10.png" /></td><td>2.07 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_211sqkm11.png" /></td><td>2.11 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_243sqkm12.png" /></td><td>2.43 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_28sqkm13.png" /></td><td>2.8 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_310sqkm14.png" /></td><td>3.10 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_329sqkm15.png" /></td><td>3.29 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_36sqkm16.png" /></td><td>3.6 sq.km</td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_37sqkm17.png" /></td><td>3.7 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_43sqkm18.png" /></td><td>4.3 sqkm </td></tr><tr><td style="text-align: center;"><img src="legend/AreaofInfluence_1_846sqkm19.png" /></td><td>8.46 sqkm </td></tr></table>', layer: layer_AreaofInfluence_1},
+            {label: "Base Map", layer: layer_BaseMap_0, radioGroup: 'bm' },]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        </script>
+    </body>
+</html>
